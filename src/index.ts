@@ -22,6 +22,11 @@ export function apply(ctx: Context, { timeout }: Config) {
     list.unshift(session.messageId);
     ctx.setTimeout(() => remove(list, session.messageId), timeout);
   });
+  ctx.on("send", (session) => {
+    const list = (recent[session.channelId] ||= []);
+    list.unshift(session.messageId);
+    ctx.setTimeout(() => remove(list, session.messageId), timeout);
+  });
 
   ctx
     .command("revoke [count:number]", { authority: 2, captureQuote: false })

@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-revoke",
   "description": "灵感来自官方插件，可以撤回所有人的消息，而不只是bot自己发送的",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
