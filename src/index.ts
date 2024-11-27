@@ -1,4 +1,4 @@
-import { Bot, Context, Dict, remove, Schema, sleep, Time } from "koishi";
+import { Bot, Context, Dict, remove, Schema, sleep, Time, h } from "koishi";
 
 export const name = "revoke";
 
@@ -52,6 +52,7 @@ export function apply(ctx: Context, { timeout, self_revoke }: Config) {
   ctx
     .command("revoke [count:number]", { authority: 2, captureQuote: false })
     .option("bot", "-b")
+    .option("user", "-u <user>")
     .action(async ({ session, options }, count = 1) => {
       const list = recent[session.channelId];
       if (session.quote) {
@@ -68,6 +69,19 @@ export function apply(ctx: Context, { timeout, self_revoke }: Config) {
           .filter((messageRecord) => messageRecord.bot)
           .slice(0, count);
         removal.forEach((messageRecord) => remove(list, messageRecord));
+      } else if (options.user) {
+        const parsedUser = h.parse(options.user)[0];
+        if (parsedUser?.type === "at") {
+          const { id } = parsedUser.attrs;
+          if (!id) {
+            return session.text(".wrong-user");
+          }
+          removal = list
+            .filter((messageRecord) => messageRecord.sender === id)
+            .slice(0, count);
+        } else {
+          return session.text(".wrong-user");
+        }
       } else {
         removal = list.splice(1, count);
       }

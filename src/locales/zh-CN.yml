@@ -1,16 +1,13 @@
 commands:
-  lru:
+  revoke:
     description: 高阶撤回消息，可选择撤回bot的、其他人的、所有人的任意条消息，非常灵活
     options:
       bot: 仅撤回bot的消息
-      no-title: 不踢有头衔的群友
+      user: 撤回某用户的任意条消息
     examples: |-
-      lru 5
-      lru 10 --no-title
-      lru 15 --dry --no-title
-    usage: |-
-      命令后面接要踢的人数即可
-      如果不想踢有头衔的群友，可以加上 --no-title 参数
-      如果只想检测不踢人，可以加上 --dry 参数
+      revoke 5
+      revoke 10 --bot
+      revoke -u @Alice 3
     messages:
       no-msg: 最近暂无消息。
+      wrong-user: 不可用的用户！请检查输入
