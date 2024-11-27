@@ -53,19 +53,33 @@ export function apply(ctx: Context, { timeout, self_revoke }: Config) {
     .command("revoke [count:number]", { authority: 2, captureQuote: false })
     .option("bot", "-b")
     .option("user", "-u <user>")
+    .option("seq", "-s")
     .action(async ({ session, options }, count = 1) => {
       const list = recent[session.channelId];
-      if (session.quote) {
+      if (session.quote && !options.seq) {
         await revokeMessage(session, list, session.quote.id);
         if (self_revoke) {
           await revokeMessage(session, list, session.messageId);
         }
         return;
       }
-      if (!list) return session.text(".no-msg");
+      if (options.seq && !session.quote) {
+        return session.text(".no-quote");
+      }
+      let modified_list = list;
+      if (options.seq && session.quote) {
+        const command = list[0];
+        modified_list = list.slice(
+          list.findIndex(
+            (messageRecord) => messageRecord.id === session.quote.id
+          )
+        );
+        modified_list.unshift(command);
+      }
+      if (!modified_list) return session.text(".no-msg");
       let removal: messageRecord[];
       if (options.bot) {
-        removal = list
+        removal = modified_list
           .filter((messageRecord) => messageRecord.bot)
           .slice(0, count);
         removal.forEach((messageRecord) => remove(list, messageRecord));
@@ -76,17 +90,17 @@ export function apply(ctx: Context, { timeout, self_revoke }: Config) {
           if (!id) {
             return session.text(".wrong-user");
           }
-          removal = list
+          removal = modified_list
             .filter((messageRecord) => messageRecord.sender === id)
             .slice(0, count);
         } else {
           return session.text(".wrong-user");
         }
       } else {
-        removal = list.splice(1, count);
+        removal = modified_list.splice(1, count);
       }
       const delay = ctx.root.config.delay.broadcast;
-      if (!list.length) delete recent[session.channelId];
+      if (!modified_list.length) delete recent[session.channelId];
       for (let index = 0; index < removal.length; index++) {
         if (index && delay) await sleep(delay);
         await deleteMessage(session.bot, session.channelId, removal[index].id);

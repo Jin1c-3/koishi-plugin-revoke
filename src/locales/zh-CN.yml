@@ -1,13 +1,18 @@
 commands:
   revoke:
-    description: 高阶撤回消息，可选择撤回bot的、其他人的、所有人的任意条消息，非常灵活
+    description: 高阶撤回消息，可选择撤回bot、其他人、所有人，或从某条消息起始的任意条消息，非常灵活
     options:
       bot: 仅撤回bot的消息
       user: 撤回某用户的任意条消息
+      seq: 从引用的消息开始撤回
     examples: |-
       revoke 5
       revoke 10 --bot
       revoke -u @Alice 3
+      revoke 5 -s (从引用的那一条消息往上撤回5条)
+      revoke (只撤回引用的那一条消息)
+      revoke 6 -u @Bob -s (需要引用消息)
     messages:
       no-msg: 最近暂无消息。
       wrong-user: 不可用的用户！请检查输入
+      no-quote: 请先引用一条消息再使用 -s 选项
