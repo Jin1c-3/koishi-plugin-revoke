@@ -1,3 +1,6 @@
+_config:
+  timeout: 消息保留的时间。
+  self_revoke: 是否撤回命令本身
 commands:
   revoke:
     description: 高阶撤回消息，可选择撤回bot、其他人、所有人，或从某条消息起始的任意条消息，非常灵活
@@ -6,13 +9,51 @@ commands:
       user: 撤回某用户的任意条消息
       seq: 从引用的消息开始撤回
     examples: |-
-      revoke 5
-      revoke 10 --bot
-      revoke -u @Alice 3
-      revoke 5 -s (从引用的那一条消息往上撤回5条)
-      revoke (只撤回引用的那一条消息)
-      revoke 6 -u @Bob -s (需要引用消息)
+      revoke 5 (撤回最近5条消息)
+      revoke 10 --bot (撤回bot最近10条消息)
+      revoke -u @Alice 3 (撤回Alice最近3条消息)
+      revoke 5 -s *引用 (从引用消息往上撤回5条)
+      revoke *引用 (只撤回引用消息)
+      revoke 6 -u @Bob -s *引用 (从引用位置开始撤回Bob的6条消息)
     messages:
       no-msg: 最近暂无消息。
       wrong-user: 不可用的用户！请检查输入
       no-quote: 请先引用一条消息再使用 -s 选项
+  set-essence:
+    description: 设置精华消息
+    options:
+      bot: 仅设置bot的消息为精华消息
+      origin: 直接输入消息id，设置该消息id为精华消息。方便用户使用dialogue插件编程
+    examples: |-
+      set-essence (将最后一条消息设为精华，也就是你发出的命令)
+      set-essence *引用 (将引用消息设为精华)
+      set-essence --bot (将bot的最后一条消息设为精华)
+      set-essence 3 (将倒数第三条消息设为精华)
+      set-essence 2 -b (将bot的倒数第二条消息设为精华)
+    messages:
+      no-msg: 最近暂无消息。
+  del-essence:
+    description: 取消精华消息
+    options:
+      bot: 仅取消bot的消息的精华状态
+      origin: 直接输入消息id，取消该消息id的精华状态
+    examples: |-
+      del-essence (取消最后一条消息的精华状态)
+      del-essence *引用 (取消引用消息的精华状态)
+      del-essence --bot (取消bot的最后一条消息的精华状态)
+      del-essence 3 (取消倒数第三条消息的精华状态)
+      del-essence 2 -b (取消bot的倒数第二条消息的精华状态)
+    messages:
+      no-msg: 最近暂无精华消息。
+      too_big: 参数太大，无法执行。
+  get-msgid:
+    descript: 获取引用消息的id，方便使用sudo、dialogue等官方插件整活
+    examples: |-
+      get-msgid *引用 (获取引用消息的id)
+      get-msgid 2 (获取你发的命令往上数两条的消息id)
+      get-msgid --bot (获取bot的最后一条消息的id)
+      get-msgid -b 3 (获取bot的倒数第三条消息的id)
+    options:
+      bot: 仅查看bot的消息的id
+    messages:
+      no-msg: 最近暂无消息。

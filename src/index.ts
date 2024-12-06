@@ -1,4 +1,15 @@
-import { Bot, Context, Dict, remove, Schema, sleep, Time, h } from "koishi";
+import {
+  Bot,
+  Context,
+  Dict,
+  remove,
+  Schema,
+  sleep,
+  Time,
+  h,
+  Session,
+} from "koishi";
+import {} from "koishi-plugin-adapter-onebot";
 
 export const name = "revoke";
 
@@ -8,12 +19,9 @@ export interface Config {
 }
 
 export const Config: Schema<Config> = Schema.object({
-  timeout: Schema.natural()
-    .role("ms")
-    .default(Time.hour)
-    .description("消息保留的时间。"),
-  self_revoke: Schema.boolean().default(true).description("是否撤回命令本身"),
-});
+  timeout: Schema.natural().role("ms").default(Time.hour),
+  self_revoke: Schema.boolean().default(true),
+}).i18n({ "zh-CN": require("./locales/zh-CN")._config });
 
 interface messageRecord {
   id: string;
@@ -28,7 +36,7 @@ export function apply(ctx: Context, { timeout, self_revoke }: Config) {
   const logger = ctx.logger("revoke");
   const recent: Dict<messageRecord[]> = {};
 
-  const handleMessage = (session) => {
+  const handleMessage = (session: Session) => {
     const list = (recent[session.channelId] ||= []);
     list.unshift({
       id: session.messageId,
@@ -111,7 +119,7 @@ export function apply(ctx: Context, { timeout, self_revoke }: Config) {
     });
 
   async function revokeMessage(
-    session,
+    session: Session,
     list: messageRecord[],
     messageId: string
   ) {
@@ -131,4 +139,68 @@ export function apply(ctx: Context, { timeout, self_revoke }: Config) {
       logger.warn(error);
     }
   }
+
+  ctx
+    .command("set-essence [back_count:natural]", {
+      authority: 3,
+      captureQuote: false,
+    })
+    .option("bot", "-b")
+    .option("origin", "-o")
+    .action(async ({ session, options }, back_count = 1) => {
+      if (session.quote) {
+        await session.bot.internal.setEssenceMsg(session.quote.id);
+        return;
+      }
+      const list = recent[session.channelId];
+      if (!list) return session.text(".no-msg");
+      if (options.origin) {
+        await session.bot.internal.setEssenceMsg(back_count);
+        return;
+      }
+      back_count--;
+      if (options.bot) {
+        await session.bot.internal.setEssenceMsg(
+          list.filter((msg) => msg.bot)[back_count].id
+        );
+        return;
+      }
+      await session.bot.internal.setEssenceMsg(list[back_count].id);
+      return;
+    });
+
+  ctx
+    .command("del-essence [index:natural]", { authority: 3 })
+    .option("origin", "-o")
+    .action(async ({ session, options }, index = 1) => {
+      if (session.quote) {
+        await session.bot.internal.deleteEssenceMsg(session.quote.id);
+        return;
+      }
+      const list = await session.bot.internal.getEssenceMsgList(session.guildId);
+      if (!list) return session.text(".no-msg");
+      if (index > list.length) return session.text(".too_big");
+      if (options.origin) {
+        await session.bot.internal.deleteEssenceMsg(index);
+        return;
+      }
+      index--;
+      await session.bot.internal.deleteEssenceMsg(list[index].message_id);
+      return;
+    });
+
+  ctx
+    .command("get-msgid [index:natural]", { authority: 2, captureQuote: false })
+    .option("bot", "-b")
+    .action(async ({ session, options }, index = 1) => {
+      if (session.quote) {
+        return session.quote.id;
+      }
+      const list = recent[session.channelId];
+      if (!list) return session.text(".no-msg");
+      if (options.bot) {
+        return list.filter((msg) => msg.bot)[index - 1].id;
+      }
+      return list[index - 1].id;
+    });
 }
